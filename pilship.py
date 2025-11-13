@@ -4,7 +4,7 @@ import pandas as pd
 import json
 from io import StringIO
 
-url = "https://www.pilship.com/wp-content/themes/hello-theme-child-master/pil-api/schedules-point2point.php?port_code_origin=JPTYO&port_code_destination=INMAA&p2p_selectedstartdate=2025-10-01&p2p_selectedenddate=2025-11-29&n=1763010003%7Ca89d3db293a0021da1c0ccd94077ae19&timestamp=1763010319864"
+url = "https://www.pilship.com/digital-solutions/?tab=customer&id=occ&label=pointToPoint&origin-port-code=JPTYO&destination-port-code=INMAA&start-date=2025-10-01&end-date=2025-11-29"
 
 headers = {
     "Accept": "*/*",
@@ -24,7 +24,21 @@ headers = {
 with sync_playwright() as p:
     browser = p.chromium.launch(headless=True)
     page = browser.new_page()
-    response = page.request.get(url, headers=headers)
+    api = {"url": None}
+
+
+    def on_request(request):
+        if "schedules-point2point.php" in request.url:
+            api["url"] = request.url
+
+
+    page.on("request", on_request)
+    page.goto(
+        url,
+        wait_until="domcontentloaded",
+    )
+    page.wait_for_timeout(10000)
+    response = page.request.get(str(api["url"]), headers=headers)
     data = json.loads(response.text())
     browser.close()
 
