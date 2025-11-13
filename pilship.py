@@ -24,21 +24,13 @@ headers = {
 with sync_playwright() as p:
     browser = p.chromium.launch(headless=True)
     page = browser.new_page()
-    api = {"url": None}
+    page.goto(url,wait_until="networkidle")
+    with page.expect_request("**/schedules-point2point.php**") as request_info:
+        pass  
 
-
-    def on_request(request):
-        if "schedules-point2point.php" in request.url:
-            api["url"] = request.url
-
-
-    page.on("request", on_request)
-    page.goto(
-        url,
-        wait_until="domcontentloaded",
-    )
-    page.wait_for_timeout(10000)
-    response = page.request.get(str(api["url"]), headers=headers)
+    request = request_info.value
+    api_url=request.url
+    response = page.request.get(api_url, headers=headers)
     data = json.loads(response.text())
     browser.close()
 
